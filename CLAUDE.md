@@ -35,17 +35,33 @@ Always run `mise run lint` and `mise run test` before committing.
 
 ## Architecture
 
-<!-- TODO: describe the high-level architecture (e.g. event sourcing, layered, hexagonal) -->
+Layered CLI. `cmd/` (Cobra) is a thin shell that loads config, builds an `App`, and formats output; all domain logic lives behind the `App` seam in `internal/app`. The core flow is **Location → Conditions → Verdict** (see `CONTEXT.md`): resolve a Location (auto-detect or geocode an override), fetch Conditions from keyless Open-Meteo providers, compute a discomfort **Score** by summing per-Factor penalties, and compare it to a **Threshold** to produce an `ok`/`nope` **Verdict**. Providers are small interfaces with resty-backed real implementations and hand-rolled fakes, injected into the `App` — so the domain is testable without network. The Verdict is also the process exit status: `ok`=0, `nope`=1, error=2 (ADR-0002).
 
 ## Repository Layout
 
 ```
-<!-- TODO: fill in directory tree with descriptions -->
+main.go                     entrypoint; maps cli.CodeFor(err) → os.Exit (ADR-0002)
+cmd/
+  root.go                   root command: flags, RunE, output modes, appFactory seam
+  version.go                version subcommand
+internal/
+  app/        App           domain orchestrator; App.Assess(ctx, override) → Assessment
+  score/      score.go      pure scoring: Factor penalty curves, Score, Verdict (ADR-0004)
+  weather/    Provider      Open-Meteo weather + AQI → weather.Report (+ FakeProvider)
+  geo/        Locator/Geocoder  IP auto-detect + postal-code geocode → geo.Location (+ fakes)
+  config/     Config        config load + Threshold knob (the only user-tunable value)
+  cli/        OutputWriter, ExitError  output formatting + exit-code sentinel
+  apptesting/ OpenApp       builds an App wired with fakes for tests
+  version/                  build-version info
 ```
 
 ## Key Patterns
 
-<!-- TODO: document constructor patterns, output conventions, testing approach, etc. -->
+- **Provider interfaces + hand-rolled fakes.** `geo.Locator`, `geo.Geocoder`, `weather.Provider` are injected into `app.New`. Real impls take a `*resty.Client` (nil → production base URLs; a BaseURL-set client routes to a test `httptest` server). Tests use the `Fake*` structs, never the network.
+- **Errors are never a Verdict.** An inability to determine Location or Conditions is returned as a wrapped error (exit 2), never collapsed into `nope` (ADR-0002).
+- **Scoring is pure.** `score.Assess(report, threshold)` has no I/O; penalty curves are named constants calibrated in ADR-0004.
+- **Exit codes via a typed sentinel.** `cli.ExitError{Code}` carries the exit code through `RunE → Execute → main`; `cli.CodeFor(err)` maps any error to its code. Cobra's `SilenceErrors`/`SilenceUsage` are on, so `main.go` prints genuine (exit-2) failures itself.
+- **Output modes.** Default prints the bare Verdict; `-v`/`--verbose` prints `nope (999) [22901]`; `--json` always emits the full object. `w.Success` is suppressed under `--quiet`.
 
 ## Code Conventions
 
