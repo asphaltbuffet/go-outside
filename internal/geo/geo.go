@@ -4,6 +4,7 @@ package geo
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/go-resty/resty/v2"
@@ -58,6 +59,7 @@ func (l *IPLocator) Detect(ctx context.Context) (Location, error) {
 	var body ipResponse
 	resp, err := l.client.R().
 		SetContext(ctx).
+		ForceContentType("application/json").
 		SetResult(&body).
 		Get("/json/")
 	if err != nil {
@@ -66,7 +68,11 @@ func (l *IPLocator) Detect(ctx context.Context) (Location, error) {
 	if resp.IsError() {
 		return Location{}, fmt.Errorf("detecting location: status %d", resp.StatusCode())
 	}
-	return Location{PostalCode: body.Postal, Lat: body.Latitude, Lon: body.Longitude}, nil
+	loc := Location{PostalCode: body.Postal, Lat: body.Latitude, Lon: body.Longitude}
+	if loc.PostalCode == "" {
+		return Location{}, errors.New("detecting location: empty response (no postal code)")
+	}
+	return loc, nil
 }
 
 // OpenMeteoGeocoder resolves postal codes via Open-Meteo's keyless geocoder.
@@ -98,6 +104,7 @@ func (g *OpenMeteoGeocoder) Geocode(ctx context.Context, postalCode string) (Loc
 		SetContext(ctx).
 		SetQueryParam("name", postalCode).
 		SetQueryParam("count", "1").
+		ForceContentType("application/json").
 		SetResult(&body).
 		Get("/search")
 	if err != nil {

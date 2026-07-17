@@ -82,9 +82,13 @@ func NewRootCmd() *cobra.Command {
 			switch {
 			case w.IsJSON():
 				if jErr := w.JSON(map[string]any{
-					"verdict":  string(assessment.Verdict),
-					"score":    assessment.Score,
-					"location": assessment.Location.PostalCode,
+					"verdict":      string(assessment.Verdict),
+					"score":        assessment.Score,
+					"location":     assessment.Location.PostalCode,
+					"temp_f":       assessment.Report.TempF,
+					"humidity_pct": assessment.Report.HumidityPct,
+					"aqi":          assessment.Report.AQI,
+					"weather_code": assessment.Report.WeatherCode,
 				}); jErr != nil {
 					return jErr
 				}

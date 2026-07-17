@@ -80,6 +80,12 @@ func TestAssessThunderstormTripsNope(t *testing.T) {
 	assert.Equal(t, score.Nope, got.Verdict)
 }
 
+func TestAssessUnknownWeatherCodeIsPenalized(t *testing.T) {
+	r := weather.Report{TempF: 70, HumidityPct: 45, AQI: 30, WeatherCode: 999}
+	got := score.Assess(r, score.DefaultThreshold)
+	assert.Equal(t, score.Nope, got.Verdict) // 120 > 100
+}
+
 func TestAssessCombinedMildTripsNope(t *testing.T) {
 	// Each factor mild, summing past 100.
 	// temp 55: 5 below 60 -> 0.25*25 = 6.25 -> 6

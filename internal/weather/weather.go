@@ -80,6 +80,7 @@ func (o *OpenMeteo) Fetch(ctx context.Context, loc geo.Location) (Report, error)
 			"current":          "temperature_2m,relative_humidity_2m,weather_code",
 			"temperature_unit": "fahrenheit",
 		}).
+		ForceContentType("application/json").
 		SetResult(&fc).
 		Get(o.forecastBaseURL)
 	if err != nil {
@@ -97,6 +98,7 @@ func (o *OpenMeteo) Fetch(ctx context.Context, loc geo.Location) (Report, error)
 			"longitude": fmt.Sprintf("%f", loc.Lon),
 			"current":   "us_aqi",
 		}).
+		ForceContentType("application/json").
 		SetResult(&aq).
 		Get(o.airQualityBase)
 	if err != nil {

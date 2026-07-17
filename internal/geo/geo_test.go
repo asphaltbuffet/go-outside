@@ -60,3 +60,29 @@ func TestOpenMeteoGeocode(t *testing.T) {
 	assert.Equal(t, "22901", got.PostalCode)
 	assert.InDelta(t, -78.47, got.Lon, 0.001)
 }
+
+func TestIPLocatorDetectNonJSONContentType(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"postal": "22901", "latitude": 38.03, "longitude": -78.47,
+		})
+	}))
+	defer srv.Close()
+
+	loc := geo.NewIPLocator(resty.New().SetBaseURL(srv.URL))
+	got, err := loc.Detect(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, "22901", got.PostalCode)
+}
+
+func TestIPLocatorDetectEmptyResponseErrors(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{}) // no postal
+	}))
+	defer srv.Close()
+
+	loc := geo.NewIPLocator(resty.New().SetBaseURL(srv.URL))
+	_, err := loc.Detect(context.Background())
+	require.Error(t, err)
+}

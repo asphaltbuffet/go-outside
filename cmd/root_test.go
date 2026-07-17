@@ -74,4 +74,6 @@ func TestRootJSON(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, out, `"verdict": "ok"`)
 	assert.Contains(t, out, `"location": "22901"`)
+	assert.Contains(t, out, `"temp_f": 70`)
+	assert.Contains(t, out, `"aqi": 30`)
 }

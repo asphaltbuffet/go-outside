@@ -24,6 +24,7 @@ type Assessment struct {
 	Verdict  score.Verdict
 	Score    int
 	Location geo.Location
+	Report   weather.Report
 }
 
 // New creates an App backed by the given config and providers.
@@ -54,7 +55,7 @@ func (a *App) Assess(ctx context.Context, override string) (Assessment, error) {
 	}
 
 	res := score.Assess(report, a.threshold())
-	return Assessment{Verdict: res.Verdict, Score: res.Score, Location: loc}, nil
+	return Assessment{Verdict: res.Verdict, Score: res.Score, Location: loc, Report: report}, nil
 }
 
 // threshold returns the configured Threshold, defaulting when unset.

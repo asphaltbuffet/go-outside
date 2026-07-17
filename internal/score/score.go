@@ -59,6 +59,10 @@ const (
 	weatherPenaltyRainShowers = 70
 	weatherPenaltySnow        = 80
 	weatherPenaltyThunder     = 120
+
+	// weatherPenaltyUnknown is applied to WMO codes outside the known 0-99
+	// groups, so unrecognized/garbage data never reads as a benign day.
+	weatherPenaltyUnknown = 120
 )
 
 // WMO weather-code boundaries (see https://open-meteo.com weather codes).
@@ -161,6 +165,6 @@ func weatherPenalty(code int) int {
 	case code >= wmoThunderMin && code <= wmoThunderMax:
 		return weatherPenaltyThunder
 	default:
-		return weatherPenaltyCloudy
+		return weatherPenaltyUnknown
 	}
 }
