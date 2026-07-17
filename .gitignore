@@ -9,3 +9,7 @@ completions/
 release_notes/
 **/mocks/*
 .direnv/
+
+# SDD controller scratch (task briefs, reports, diffs, progress ledger)
+scratch-briefs/
+.superpowers/
