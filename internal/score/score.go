@@ -33,6 +33,52 @@ const (
 	humidityCoeff       = 0.1
 )
 
+// AQI category upper bounds (US EPA) and their discomfort penalties (ADR-0004).
+const (
+	aqiGoodMax          = 50
+	aqiModerateMax      = 100
+	aqiUSGMax           = 150
+	aqiUnhealthyMax     = 200
+	aqiVeryUnhealthyMax = 300
+
+	aqiPenaltyGood          = 0
+	aqiPenaltyModerate      = 20
+	aqiPenaltyUSG           = 60
+	aqiPenaltyUnhealthy     = 120
+	aqiPenaltyVeryUnhealthy = 300
+	aqiPenaltyHazardous     = 600
+)
+
+// WMO weather-code group penalties (ADR-0004).
+const (
+	weatherPenaltyClear       = 0
+	weatherPenaltyCloudy      = 5
+	weatherPenaltyFog         = 20
+	weatherPenaltyDrizzle     = 30
+	weatherPenaltyRain        = 60
+	weatherPenaltyRainShowers = 70
+	weatherPenaltySnow        = 80
+	weatherPenaltyThunder     = 120
+)
+
+// WMO weather-code boundaries (see https://open-meteo.com weather codes).
+const (
+	wmoClearMax       = 1
+	wmoCloudyMax      = 3
+	wmoFogA           = 45
+	wmoFogB           = 48
+	wmoDrizzleMin     = 51
+	wmoDrizzleMax     = 57
+	wmoRainMin        = 61
+	wmoRainMax        = 67
+	wmoSnowMin        = 71
+	wmoSnowMax        = 77
+	wmoRainShowersMin = 80
+	wmoRainShowersMax = 82
+	wmoThunderMin     = 95
+	wmoThunderMax     = 99
+)
+
 // Result is the outcome of assessing a Report.
 type Result struct {
 	Verdict Verdict
@@ -80,41 +126,41 @@ func humidityPenalty(pct float64) int {
 // aqiPenalty maps the US AQI to a penalty by EPA category (ADR-0004).
 func aqiPenalty(aqi int) int {
 	switch {
-	case aqi <= 50:
-		return 0
-	case aqi <= 100:
-		return 20
-	case aqi <= 150:
-		return 60
-	case aqi <= 200:
-		return 120
-	case aqi <= 300:
-		return 300
+	case aqi <= aqiGoodMax:
+		return aqiPenaltyGood
+	case aqi <= aqiModerateMax:
+		return aqiPenaltyModerate
+	case aqi <= aqiUSGMax:
+		return aqiPenaltyUSG
+	case aqi <= aqiUnhealthyMax:
+		return aqiPenaltyUnhealthy
+	case aqi <= aqiVeryUnhealthyMax:
+		return aqiPenaltyVeryUnhealthy
 	default:
-		return 600
+		return aqiPenaltyHazardous
 	}
 }
 
 // weatherPenalty maps a WMO weather code to a penalty (ADR-0004).
 func weatherPenalty(code int) int {
 	switch {
-	case code <= 1: // clear / mainly clear
-		return 0
-	case code <= 3: // partly cloudy / overcast
-		return 5
-	case code == 45 || code == 48: // fog
-		return 20
-	case code >= 51 && code <= 57: // drizzle
-		return 30
-	case code >= 61 && code <= 67: // rain
-		return 60
-	case code >= 71 && code <= 77: // snow
-		return 80
-	case code >= 80 && code <= 82: // rain showers
-		return 70
-	case code >= 95 && code <= 99: // thunderstorm
-		return 120
+	case code <= wmoClearMax:
+		return weatherPenaltyClear
+	case code <= wmoCloudyMax:
+		return weatherPenaltyCloudy
+	case code == wmoFogA || code == wmoFogB:
+		return weatherPenaltyFog
+	case code >= wmoDrizzleMin && code <= wmoDrizzleMax:
+		return weatherPenaltyDrizzle
+	case code >= wmoRainMin && code <= wmoRainMax:
+		return weatherPenaltyRain
+	case code >= wmoSnowMin && code <= wmoSnowMax:
+		return weatherPenaltySnow
+	case code >= wmoRainShowersMin && code <= wmoRainShowersMax:
+		return weatherPenaltyRainShowers
+	case code >= wmoThunderMin && code <= wmoThunderMax:
+		return weatherPenaltyThunder
 	default:
-		return 5
+		return weatherPenaltyCloudy
 	}
 }

@@ -15,7 +15,7 @@ func main() {
 	if err != nil {
 		// nope (exit 1) already printed its own stdout line; only surface real
 		// failures (exit >= 2) on stderr, since cobra's SilenceErrors is on.
-		if code := cli.CodeFor(err); code >= 2 {
+		if code := cli.CodeFor(err); code >= cli.ExitCodeError {
 			fmt.Fprintln(os.Stderr, "go-outside:", err)
 		}
 		os.Exit(cli.CodeFor(err))
