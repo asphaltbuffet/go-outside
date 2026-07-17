@@ -3,15 +3,21 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/asphaltbuffet/go-outside/cmd"
+	"github.com/asphaltbuffet/go-outside/internal/cli"
 )
 
 func main() {
-	ctx := context.Background()
-
-	if err := cmd.Execute(ctx); err != nil {
-		os.Exit(1)
+	err := cmd.Execute(context.Background())
+	if err != nil {
+		// nope (exit 1) already printed its own stdout line; only surface real
+		// failures (exit >= 2) on stderr, since cobra's SilenceErrors is on.
+		if code := cli.CodeFor(err); code >= 2 {
+			fmt.Fprintln(os.Stderr, "go-outside:", err)
+		}
+		os.Exit(cli.CodeFor(err))
 	}
 }
