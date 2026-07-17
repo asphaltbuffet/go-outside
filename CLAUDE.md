@@ -67,3 +67,17 @@ Always run `mise run lint` and `mise run test` before committing.
 - `fd -H` over `find`, `rg` over `grep`, `sd` over `sed`, `jq` for JSON
 - No `&&` between shell commands — run as separate tool calls
 - No `git` commands — use `jj` equivalents
+
+## Agent skills
+
+### Issue tracker
+
+Issues and PRDs live in GitHub Issues (`asphaltbuffet/go-outside`), managed via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Five canonical triage roles map to identically-named GitHub labels (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
