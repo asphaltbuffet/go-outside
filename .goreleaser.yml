@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema-pro.json
+---
+version: 2
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X github.com/asphaltbuffet/go-outside/internal/version.Version={{.Version}} -X github.com/asphaltbuffet/go-outside/internal/version.GitCommit={{.ShortCommit}} -X github.com/asphaltbuffet/go-outside/internal/version.BuildDate={{.Date}}
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+upx:
+  - goos: [linux]
+    enabled: "{{ .IsRelease }}"
+    compress: best
+
+archives:
+  - formats: [ 'tgz' ]
+    name_template: >-
+      {{ .ProjectName }}-
+      {{- .Version }}-
+      {{- .Os }}-
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else }}{{ .Arch}}{{ end }}
+      {{- if .Arm }}_v{{ .Arm }}{{ end }}
+    format_overrides:
+      - goos: windows
+        formats: [ 'zip' ]
+    files:
+      - info:
+          owner: root
+          group: root
+          mode: 0644
+          mtime: "{{ .CommitDate }}"
+      - src: CHANGELOG*
+      - src: README*
+      - src: LICENSE*
+
+checksum:
+  name_template: "checksums.txt"
+
+snapshot:
+  version_template: "{{ .Version }}-snapshot"
+
+changelog:
+  disable: true
+
+release:
+  github:
+    owner: asphaltbuffet
+    name: go-outside
+  prerelease: auto
+  mode: replace
+
+announce:
+  skip: true
