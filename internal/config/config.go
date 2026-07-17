@@ -23,6 +23,9 @@ const (
 // Config holds the complete application configuration.
 type Config struct {
 	Output OutputConfig `mapstructure:"output" toml:"output"`
+	// Threshold is the Score boundary separating ok from nope. 0 means unset;
+	// the App substitutes score.DefaultThreshold. User-tunable (ADR-0004).
+	Threshold int `mapstructure:"threshold" toml:"threshold"`
 	// TODO: add app-specific config sections (e.g. Database, Logging)
 }
 

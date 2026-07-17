@@ -9,6 +9,8 @@ import (
 
 	"github.com/asphaltbuffet/go-outside/internal/app"
 	"github.com/asphaltbuffet/go-outside/internal/config"
+	"github.com/asphaltbuffet/go-outside/internal/geo"
+	"github.com/asphaltbuffet/go-outside/internal/weather"
 )
 
 // NewRootCmd builds the root command with persistent flags and config loading.
@@ -67,5 +69,10 @@ func newApp(ctx context.Context) (*app.App, error) {
 		return nil, errors.New("config not found in context")
 	}
 
-	return app.New(cfg)
+	return app.New(
+		cfg,
+		geo.NewIPLocator(nil),
+		geo.NewOpenMeteoGeocoder(nil),
+		weather.NewOpenMeteo(nil),
+	)
 }
