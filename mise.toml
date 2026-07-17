@@ -1,0 +1,127 @@
+[tools]
+changie = "latest"
+"aqua:gotestyourself/gotestsum" = "latest"
+"aqua:vektra/mockery" = "latest"
+"go:github.com/nix-community/gomod2nix" = "latest"
+"go:golang.org/x/tools/cmd/goimports" = "latest"
+"go:golang.org/x/tools/cmd/stringer" = "latest"
+golangci-lint = "latest"
+
+[tasks.build]
+description = "go build"
+run = '''
+#!/usr/bin/env bash
+VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "v0.0.0-dev")
+COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+PKG="github.com/asphaltbuffet/go-outside/internal/version"
+go build \
+  -ldflags "-X ${PKG}.Version=${VERSION} -X ${PKG}.GitCommit=${COMMIT} -X ${PKG}.BuildDate=${DATE}" \
+  -o dist/ ./...
+'''
+
+[tasks.cover]
+description = "go test coverage"
+depends = ["test"]
+sources = ["bin/coverage.out"]
+outputs = ["bin/coverage.html"]
+run = [
+  "go tool cover -html=bin/coverage.out -o bin/coverage.html",
+  "go tool cover -func=bin/coverage.out",
+]
+
+[tasks.dev]
+description = "dev build pipeline"
+depends = ["generate", "lint", "test", "snapshot", "mock"]
+
+[tasks.diff]
+description = "git diff"
+hide = true
+run = '''
+#!/usr/bin/env bash
+git diff --exit-code
+RES=$(git status --porcelain)
+if [ -n "$RES" ]; then
+  echo "$RES" && exit 1
+fi
+'''
+
+[tasks.generate]
+description = "auto generate artifacts"
+alias = "gen"
+sources = ["./**/*.go"]
+run = "go generate ./..."
+
+[tasks.lint]
+description = "lint project files"
+depends = ["generate", "mock", "lint-verify"]
+wait_for = ["test", "mock"]
+sources = ["**/*.go", ".golangci.yml"]
+outputs = ["bin/golangci-lint.html"]
+run = [
+  "mkdir -p bin",
+  "golangci-lint run --output.html.path=bin/golangci-lint.html --output.text.path=stdout",
+]
+
+[tasks.lint-fix]
+description = "fix linting issues in project files"
+depends = ["generate", "mock", "lint-verify"]
+wait_for = ["test", "mock"]
+run = [
+  "mkdir -p bin",
+  "golangci-lint run --fix --output.html.path=bin/golangci-lint.html --output.text.path=stdout",
+]
+
+[tasks.lint-verify]
+description = "verify linting config"
+hide = true
+sources = [".golangci.yml"]
+run = ["golangci-lint config verify"]
+
+[tasks.mock]
+description = "generate mocks"
+depends = ["generate"]
+run = "mockery --log-level=warn"
+
+[tasks.mod-tidy]
+description = "go mod tidy"
+alias = "mod"
+sources = ["**/*.go", "**/go.mod", "**/go.sum"]
+outputs = ["**/go.mod", "**/go.sum"]
+run = "go mod tidy"
+depends = ["mock"]
+depends_post = ["nix-hash"]
+
+[tasks.nix-hash]
+description = "Update gomod2nix.toml dependency lockfile"
+hide = true
+sources = ["go.sum"]
+outputs = ["gomod2nix.toml"]
+run = "gomod2nix generate"
+
+[tasks.snapshot]
+description = "goreleaser build snapshot"
+depends = ["generate", "mod-tidy"]
+wait_for = ["test", "lint"]
+alias = "ss"
+run = [
+  "goreleaser check -q",
+  "goreleaser build --clean --single-target --snapshot",
+]
+
+[tasks.test]
+description = "run test suite"
+depends = ["generate"]
+wait_for = ["mock"]
+sources = ["**/*.go", "**/testdata/**"]
+outputs = ["bin/coverage.out"]
+run = [
+  "mkdir -p bin",
+  "gotestsum -- -race -covermode=atomic -coverprofile=bin/coverage.out $(go list ./... | grep -v /mocks)",
+]
+
+[tasks.update-deps]
+description = "update direct dependencies to latest versions"
+alias = "up"
+run = "go get -u"
+depends_post = ["mod-tidy"]

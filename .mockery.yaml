@@ -1,0 +1,12 @@
+dir: "{{.InterfaceDir}}/mocks"
+filename: "mock_{{.InterfaceName | lower}}.go"
+log-level: warn
+pkgname: mocks
+template: testify
+template-data:
+  unroll-variadic: true
+packages:
+  # Add external interfaces to mock here. Example:
+  # github.com/asphaltbuffet/go-outside/internal/logging:
+  #   interfaces:
+  #     Logger: {}
