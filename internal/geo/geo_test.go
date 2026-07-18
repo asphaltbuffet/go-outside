@@ -26,9 +26,10 @@ func TestIPLocatorDetect(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"postal":    "22901",
-			"latitude":  38.03,
-			"longitude": -78.47,
+			"status": "success",
+			"zip":    "22901",
+			"lat":    38.03,
+			"lon":    -78.47,
 		})
 	}))
 	defer srv.Close()
@@ -39,6 +40,36 @@ func TestIPLocatorDetect(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "22901", got.PostalCode)
 	assert.InDelta(t, 38.03, got.Lat, 0.001)
+}
+
+func TestIPLocatorDetectRateLimited(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusTooManyRequests)
+	}))
+	defer srv.Close()
+
+	loc := geo.NewIPLocator(resty.New().SetBaseURL(srv.URL))
+	_, err := loc.Detect(context.Background())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "rate limited")
+	assert.Contains(t, err.Error(), "--location")
+}
+
+func TestIPLocatorDetectAPIFailure(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		// ip-api.com returns HTTP 200 with status:fail on error.
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"status":  "fail",
+			"message": "reserved range",
+		})
+	}))
+	defer srv.Close()
+
+	loc := geo.NewIPLocator(resty.New().SetBaseURL(srv.URL))
+	_, err := loc.Detect(context.Background())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "reserved range")
 }
 
 func TestOpenMeteoGeocode(t *testing.T) {
@@ -65,7 +96,7 @@ func TestIPLocatorDetectNonJSONContentType(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"postal": "22901", "latitude": 38.03, "longitude": -78.47,
+			"status": "success", "zip": "22901", "lat": 38.03, "lon": -78.47,
 		})
 	}))
 	defer srv.Close()

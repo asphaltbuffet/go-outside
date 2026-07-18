@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 
 	"github.com/go-resty/resty/v2"
 )
@@ -30,7 +31,10 @@ type Geocoder interface {
 }
 
 const (
-	defaultIPBaseURL      = "https://ipapi.co"
+	// ip-api.com's free tier is keyless and HTTP-only (HTTPS requires a paid
+	// plan) with a ~45 req/min limit — far more generous than ipapi.co's daily
+	// cap. See ADR-0003.
+	defaultIPBaseURL      = "http://ip-api.com"
 	defaultGeocodeBaseURL = "https://geocoding-api.open-meteo.com/v1"
 )
 
@@ -48,10 +52,14 @@ func NewIPLocator(client *resty.Client) *IPLocator {
 	return &IPLocator{client: client}
 }
 
+// ipResponse is the ip-api.com JSON shape. It signals failure via the Status
+// field (`success`/`fail`) with a Message, returning HTTP 200 either way.
 type ipResponse struct {
-	Postal    string  `json:"postal"`
-	Latitude  float64 `json:"latitude"`
-	Longitude float64 `json:"longitude"`
+	Status  string  `json:"status"`
+	Message string  `json:"message"`
+	Zip     string  `json:"zip"`
+	Lat     float64 `json:"lat"`
+	Lon     float64 `json:"lon"`
 }
 
 // Detect returns the Location inferred from the caller's IP address.
@@ -65,10 +73,23 @@ func (l *IPLocator) Detect(ctx context.Context) (Location, error) {
 	if err != nil {
 		return Location{}, fmt.Errorf("detecting location: %w", err)
 	}
+	if resp.StatusCode() == http.StatusTooManyRequests {
+		return Location{}, errors.New(
+			"detecting location: rate limited by geolocation provider; " +
+				"retry shortly or pass --location <postal-code>")
+	}
 	if resp.IsError() {
 		return Location{}, fmt.Errorf("detecting location: status %d", resp.StatusCode())
 	}
-	loc := Location{PostalCode: body.Postal, Lat: body.Latitude, Lon: body.Longitude}
+	// ip-api.com returns HTTP 200 even on failure, signaling via Status.
+	if body.Status != "success" {
+		msg := body.Message
+		if msg == "" {
+			msg = "unknown error"
+		}
+		return Location{}, fmt.Errorf("detecting location: %s", msg)
+	}
+	loc := Location{PostalCode: body.Zip, Lat: body.Lat, Lon: body.Lon}
 	if loc.PostalCode == "" {
 		return Location{}, errors.New("detecting location: empty response (no postal code)")
 	}
