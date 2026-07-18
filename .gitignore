@@ -13,3 +13,6 @@ release_notes/
 # SDD controller scratch (task briefs, reports, diffs, progress ledger)
 scratch-briefs/
 .superpowers/
+
+# Local Claude Code harness state (machine-specific)
+.claude/settings.local.json

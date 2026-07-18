@@ -1,7 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "mcp__plugin_claude-code-home-manager_serena__get_symbols_overview"
-    ]
-  }
-}

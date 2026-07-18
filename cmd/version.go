@@ -4,7 +4,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/asphaltbuffet/go-outside/internal/cli"
-	"github.com/asphaltbuffet/go-outside/internal/version"
+	"github.com/asphaltbuffet/go-outside/internal/versioncmd"
 )
 
 // newVersionCmd builds the "version" subcommand.
@@ -23,13 +23,13 @@ func newVersionCmd() *cobra.Command {
 
 			if w.IsJSON() {
 				return w.JSON(map[string]string{
-					"version": version.ShortVersion(),
-					"commit":  version.BuildInfo(),
-					"full":    version.FullVersion(),
+					"version": versioncmd.ShortVersion(),
+					"commit":  versioncmd.BuildInfo(),
+					"full":    versioncmd.FullVersion(),
 				})
 			}
 
-			w.Success(version.FullVersion())
+			w.Success(versioncmd.FullVersion())
 			return nil
 		},
 	}

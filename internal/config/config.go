@@ -35,16 +35,6 @@ type OutputConfig struct {
 	Quiet         int    `mapstructure:"quiet"          toml:"quiet"`
 }
 
-// IsJSON reports whether JSON output mode is active.
-func (c *Config) IsJSON() bool {
-	return c.Output.DefaultFormat == OutputFormatJSON
-}
-
-// IsQuiet reports whether quiet mode is active.
-func (c *Config) IsQuiet() bool {
-	return c.Output.Quiet > 0
-}
-
 // New creates a Config from the given optional filepath.
 // If filepath is empty, checks GO_OUTSIDE_CONFIG env var, then default XDG locations.
 func New(fp string) (*Config, error) {
@@ -59,6 +49,16 @@ func NewWithFS(fs afero.Fs, fp string) (*Config, error) {
 	}
 	applyDefaults(cfg)
 	return cfg, nil
+}
+
+// IsJSON reports whether JSON output mode is active.
+func (c *Config) IsJSON() bool {
+	return c.Output.DefaultFormat == OutputFormatJSON
+}
+
+// IsQuiet reports whether quiet mode is active.
+func (c *Config) IsQuiet() bool {
+	return c.Output.Quiet > 0
 }
 
 // GetDefaults returns a Config populated with default values.
@@ -83,7 +83,7 @@ func applyDefaults(cfg *Config) {
 	}
 }
 
-// Ensure Config implements the fmt.Stringer interface for debugging.
+// Ensure Config implements the [fmt.Stringer] interface for debugging.
 var _ fmt.Stringer = (*Config)(nil)
 
 func (c *Config) String() string {

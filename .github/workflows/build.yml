@@ -42,10 +42,8 @@ jobs:
       - name: Set up mise
         uses: jdx/mise-action@v4
 
-      - name: Generate code and mocks
-        run: |
-          mise run generate
-          mise run mock
+      - name: Generate code
+        run: mise run generate
 
       - name: Upload generated files
         uses: actions/upload-artifact@v7
@@ -53,7 +51,6 @@ jobs:
           name: generated
           path: |
             **/*_string.go
-            **/mocks/mock_*.go
 
   test:
     name: Build and Test
