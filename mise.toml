@@ -1,7 +1,6 @@
 [tools]
 changie = "latest"
 "aqua:gotestyourself/gotestsum" = "latest"
-"aqua:vektra/mockery" = "latest"
 "go:github.com/nix-community/gomod2nix" = "latest"
 "go:golang.org/x/tools/cmd/goimports" = "latest"
 "go:golang.org/x/tools/cmd/stringer" = "latest"
@@ -14,7 +13,7 @@ run = '''
 VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "v0.0.0-dev")
 COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-PKG="github.com/asphaltbuffet/go-outside/internal/version"
+PKG="github.com/asphaltbuffet/go-outside/internal/versioncmd"
 go build \
   -ldflags "-X ${PKG}.Version=${VERSION} -X ${PKG}.GitCommit=${COMMIT} -X ${PKG}.BuildDate=${DATE}" \
   -o dist/ ./...
@@ -32,7 +31,7 @@ run = [
 
 [tasks.dev]
 description = "dev build pipeline"
-depends = ["generate", "lint", "test", "snapshot", "mock"]
+depends = ["generate", "lint", "test", "snapshot"]
 
 [tasks.diff]
 description = "git diff"
@@ -54,8 +53,8 @@ run = "go generate ./..."
 
 [tasks.lint]
 description = "lint project files"
-depends = ["generate", "mock", "lint-verify"]
-wait_for = ["test", "mock"]
+depends = ["generate", "lint-verify"]
+wait_for = ["test"]
 sources = ["**/*.go", ".golangci.yml"]
 outputs = ["bin/golangci-lint.html"]
 run = [
@@ -65,8 +64,8 @@ run = [
 
 [tasks.lint-fix]
 description = "fix linting issues in project files"
-depends = ["generate", "mock", "lint-verify"]
-wait_for = ["test", "mock"]
+depends = ["generate", "lint-verify"]
+wait_for = ["test"]
 run = [
   "mkdir -p bin",
   "golangci-lint run --fix --output.html.path=bin/golangci-lint.html --output.text.path=stdout",
@@ -78,18 +77,12 @@ hide = true
 sources = [".golangci.yml"]
 run = ["golangci-lint config verify"]
 
-[tasks.mock]
-description = "generate mocks"
-depends = ["generate"]
-run = "mockery --log-level=warn"
-
 [tasks.mod-tidy]
 description = "go mod tidy"
 alias = "mod"
 sources = ["**/*.go", "**/go.mod", "**/go.sum"]
 outputs = ["**/go.mod", "**/go.sum"]
 run = "go mod tidy"
-depends = ["mock"]
 depends_post = ["nix-hash"]
 
 [tasks.nix-hash]
@@ -112,7 +105,6 @@ run = [
 [tasks.test]
 description = "run test suite"
 depends = ["generate"]
-wait_for = ["mock"]
 sources = ["**/*.go", "**/testdata/**"]
 outputs = ["bin/coverage.out"]
 run = [

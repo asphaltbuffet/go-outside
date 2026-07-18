@@ -23,6 +23,9 @@ const (
 // Config holds the complete application configuration.
 type Config struct {
 	Output OutputConfig `mapstructure:"output" toml:"output"`
+	// Threshold is the Score boundary separating ok from nope. 0 means unset;
+	// the App substitutes score.DefaultThreshold. User-tunable (ADR-0004).
+	Threshold int `mapstructure:"threshold" toml:"threshold"`
 	// TODO: add app-specific config sections (e.g. Database, Logging)
 }
 
@@ -30,16 +33,6 @@ type Config struct {
 type OutputConfig struct {
 	DefaultFormat string `mapstructure:"default_format" toml:"default_format"`
 	Quiet         int    `mapstructure:"quiet"          toml:"quiet"`
-}
-
-// IsJSON reports whether JSON output mode is active.
-func (c *Config) IsJSON() bool {
-	return c.Output.DefaultFormat == OutputFormatJSON
-}
-
-// IsQuiet reports whether quiet mode is active.
-func (c *Config) IsQuiet() bool {
-	return c.Output.Quiet > 0
 }
 
 // New creates a Config from the given optional filepath.
@@ -56,6 +49,16 @@ func NewWithFS(fs afero.Fs, fp string) (*Config, error) {
 	}
 	applyDefaults(cfg)
 	return cfg, nil
+}
+
+// IsJSON reports whether JSON output mode is active.
+func (c *Config) IsJSON() bool {
+	return c.Output.DefaultFormat == OutputFormatJSON
+}
+
+// IsQuiet reports whether quiet mode is active.
+func (c *Config) IsQuiet() bool {
+	return c.Output.Quiet > 0
 }
 
 // GetDefaults returns a Config populated with default values.
@@ -80,7 +83,7 @@ func applyDefaults(cfg *Config) {
 	}
 }
 
-// Ensure Config implements the fmt.Stringer interface for debugging.
+// Ensure Config implements the [fmt.Stringer] interface for debugging.
 var _ fmt.Stringer = (*Config)(nil)
 
 func (c *Config) String() string {

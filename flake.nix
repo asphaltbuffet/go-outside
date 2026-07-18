@@ -54,7 +54,7 @@
           ldflags = [
             "-s"
             "-w"
-            "-X github.com/asphaltbuffet/go-outside/internal/version.Version=${version}"
+            "-X github.com/asphaltbuffet/go-outside/internal/versioncmd.Version=${version}"
           ];
 
           meta = with lib; {
